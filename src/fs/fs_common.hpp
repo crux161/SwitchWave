@@ -165,7 +165,7 @@ class Filesystem {
 
     public:
         Type type;
-        std::string_view name, mount_name;
+        std::string name, mount_name;
 
     protected:
         devoptab_t devoptab = {};

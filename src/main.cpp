@@ -141,19 +141,25 @@ void ums_devices_changed_cb(const std::vector<sw::fs::UmsController::Device> &de
     auto &context = *static_cast<sw::Context *>(user);
 
     // Remove unmounted devices
-    for (auto &fs: context.filesystems) {
+    bool removed_cur = false;
+    std::erase_if(context.filesystems, [&](const auto &fs) {
         if (fs->type != sw::fs::Filesystem::Type::Usb)
-            continue;
+            return false;
 
         auto it = std::find_if(devices.begin(), devices.end(), [&fs](const auto &dev) {
             return fs->mount_name == dev.mount_name;
         });
 
         if (it == devices.end()) {
-            std::erase(context.filesystems, fs);
-            context.cur_fs = context.filesystems.front();
+            if (context.cur_fs == fs)
+                removed_cur = true;
+            return true;
         }
-    }
+        return false;
+    });
+
+    if (removed_cur && !context.filesystems.empty())
+        context.cur_fs = context.filesystems.front();
 
     // Add new devices
     for (auto &dev: devices) {
