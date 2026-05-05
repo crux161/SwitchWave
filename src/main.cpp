@@ -15,9 +15,12 @@
 // You should have received a copy of the GNU General Public License
 // along with SwitchWave.  If not, see <http://www.gnu.org/licenses/>.
 
+#include <cerrno>
 #include <cstdio>
 #include <chrono>
 #include <filesystem>
+#include <mutex>
+#include <optional>
 #include <string_view>
 #include <thread>
 
@@ -137,8 +140,26 @@ void mpv_presetup() {
     std::printf("Dumped standard font\n");
 }
 
+// libusbhsfs invokes the populate callback on its USB-event thread.
+// Stash the new device list under a mutex; the main thread applies
+// the change so context.filesystems / cur_fs stay single-threaded.
+std::mutex                                              g_ums_pending_mtx;
+std::optional<std::vector<sw::fs::UmsController::Device>> g_ums_pending;
+
 void ums_devices_changed_cb(const std::vector<sw::fs::UmsController::Device> &devices, void *user) {
-    auto &context = *static_cast<sw::Context *>(user);
+    auto lk = std::scoped_lock(g_ums_pending_mtx);
+    g_ums_pending = devices;
+}
+
+void apply_pending_ums_changes(sw::Context &context) {
+    std::vector<sw::fs::UmsController::Device> devices;
+    {
+        auto lk = std::scoped_lock(g_ums_pending_mtx);
+        if (!g_ums_pending)
+            return;
+        devices = std::move(*g_ums_pending);
+        g_ums_pending.reset();
+    }
 
     // Remove unmounted devices
     bool removed_cur = false;
@@ -186,6 +207,8 @@ int menu_loop(sw::Renderer &renderer, sw::Context &context) {
             context.want_quit = true;
             break;
         }
+
+        apply_pending_ums_changes(context);
 
         padUpdate(&g_pad);
         auto has_touches = hidGetTouchScreenStates(&g_touch_state, 1);
@@ -280,6 +303,18 @@ int video_loop(sw::Renderer &renderer, sw::Context &context) {
     while (!context.want_quit && !context.player_is_idle && !context.last_error) {
         if (!appletMainLoop()) {
             context.want_quit = true;
+            break;
+        }
+
+        apply_pending_ums_changes(context);
+
+        // If the filesystem hosting the playing file was unplugged
+        // (e.g. USB key removed mid-playback), stop mpv and bail out
+        // of the player loop so it can't keep reading a dead device.
+        if (!context.cur_file.empty() &&
+                !context.get_filesystem(sw::fs::Path::mountpoint(context.cur_file))) {
+            lmpv.command_async("stop");
+            context.set_error(-EIO);
             break;
         }
 
