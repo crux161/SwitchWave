@@ -143,7 +143,7 @@ void mpv_presetup() {
 // libusbhsfs invokes the populate callback on its USB-event thread.
 // Stash the new device list under a mutex; the main thread applies
 // the change so context.filesystems / cur_fs stay single-threaded.
-std::mutex                                              g_ums_pending_mtx;
+std::mutex                                                g_ums_pending_mtx;
 std::optional<std::vector<sw::fs::UmsController::Device>> g_ums_pending;
 
 void ums_devices_changed_cb(const std::vector<sw::fs::UmsController::Device> &devices, void *user) {
