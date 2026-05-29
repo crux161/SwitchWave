@@ -106,7 +106,8 @@ void MainMenuGui::render() {
         ImGui::SetWindowFontScale(this->scale_factor());
         SW_SCOPEGUARD([] { ImGui::End(); });
 
-        auto bar_min = ImGui::GetCursorScreenPos() + this->screen_rel_vec<ImVec2>(0.3, 0);
+        auto origin  = ImGui::GetCursorScreenPos();
+        auto bar_min = origin + this->screen_rel_vec<ImVec2>(0.3, 0);
         auto bar_max = bar_min + ImVec2(this->screen_rel_width(0.7), imctx.FontSize + imstyle.FramePadding.y * 2);
 
         ImGui::BeginTabBar("##maintabbar", ImGuiTabBarFlags_NoCloseWithMiddleMouseButton |
@@ -115,8 +116,23 @@ void MainMenuGui::render() {
 
         ImGui::GetCurrentTabBar()->BarRect = ImRect(bar_min, bar_max);
 
-        // ImGui::SetCursorPosX(this->screen_rel_width(0.2));
-        // ImGui::Dummy(this->screen_rel_vec<ImVec2>(0.2, 0));
+        // Latitude header: app branding in the reserved left region, plus a rule under the top bar.
+        {
+            auto *draw    = ImGui::GetWindowDrawList();
+            auto  win_pos = ImGui::GetWindowPos();
+            auto  win_w   = ImGui::GetWindowSize().x;
+
+            const char *title     = "SwitchWave";
+            auto        title_dim = ImGui::CalcTextSize(title);
+            auto        title_pos = ImVec2(origin.x + this->screen_rel_width(0.025),
+                                           bar_min.y + (bar_max.y - bar_min.y - title_dim.y) * 0.5f);
+            draw->AddText(title_pos, ImGui::GetColorU32(ImGuiCol_Text), title);
+
+            float margin = this->screen_rel_width(0.025);
+            float rule_y = bar_max.y + this->screen_rel_height(0.006);
+            draw->AddLine(ImVec2(win_pos.x + margin, rule_y), ImVec2(win_pos.x + win_w - margin, rule_y),
+                          ImGui::GetColorU32(ImGuiCol_Border), std::max(1.0f, this->scale_factor()));
+        }
 
         if (ImGui::BeginTabItem("Explorer", nullptr, ImGuiTabItemFlags_NoReorder)) {
             SW_SCOPEGUARD([] { ImGui::EndTabItem(); });
