@@ -980,7 +980,7 @@ void SettingsEditor::render() {
         ImGui::TableSetupColumn("Status", ImGuiTableColumnFlags_WidthFixed, this->screen_rel_width(0.1));
         ImGui::TableHeadersRow();
 
-        auto &devs = this->context.ums.get_devices();
+        auto devs = this->context.ums.get_devices();
         for (std::size_t i = 0; i < devs.size(); ++i) {
             auto &dev = devs[i];
 
@@ -988,17 +988,18 @@ void SettingsEditor::render() {
                 ImGui::TableNextRow();
 
             ImGui::TableNextColumn();
-            ImGui::Text(dev.name.c_str());
+            ImGui::Text("%s", dev.name.c_str());
 
             ImGui::TableNextColumn();
-            ImGui::Text(LIBUSBHSFS_FS_TYPE_STR(dev.type));
+            ImGui::Text("%s", LIBUSBHSFS_FS_TYPE_STR(dev.type));
 
             ImGui::TableNextColumn();
             if (ImGui::Button(make_id(i, "Unmount"))) {
                 std::erase_if(this->context.filesystems, [&dev](const auto &fs) {
                     return dev.mount_name == fs->mount_name;
                 });
-                this->context.cur_fs = this->context.filesystems.front();
+                if (!this->context.filesystems.empty())
+                    this->context.cur_fs = this->context.filesystems.front();
 
                 context.ums.unmount_device(dev);
             }
