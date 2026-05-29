@@ -12,10 +12,10 @@
      u64 entry_size = ((gpt_entry->lba_end + 1) - gpt_entry->lba_start);
      UsbHsFsDriveLogicalUnitFileSystemType fs_type = UsbHsFsDriveLogicalUnitFileSystemType_Invalid;
 
-+    /* Discard entries whose LBA span falls outside this logical unit before any branch below
-+     * issues a read. This filters out uninitialized/garbage partition array entries (e.g. a
-+     * type GUID 0xF4-filled with lba_start == 0xF4F4F4F4F4F4F4F4) whose reads would target
-+     * absurd LBAs, which can stall flaky USB drives, force a BOT reset and knock them off the bus. */
++    /* Discard entries whose LBA span falls outside this logical unit before any branch below issues a read. */
++    /* This filters out uninitialized/garbage partition array entries (e.g. a type GUID 0xF4-filled with an */
++    /* lba_start of 0xF4F4F4F4F4F4F4F4), whose reads would target absurd LBAs that can stall flaky USB drives, */
++    /* force a BOT reset and knock them off the bus. */
 +    if (entry_lba >= lun_ctx->block_count || gpt_entry->lba_end >= lun_ctx->block_count || gpt_entry->lba_end < entry_lba)
 +    {
 +        USBHSFS_LOG_MSG("Discarding GPT partition entry with out-of-range LBA span (0x%lX - 0x%lX) (interface %d, LUN %u).", entry_lba, gpt_entry->lba_end, lun_ctx->usb_if_id, lun_ctx->lun);
@@ -25,7 +25,7 @@
      if (!memcmp(gpt_entry->type_guid, g_microsoftBasicDataPartitionGuid, sizeof(g_microsoftBasicDataPartitionGuid)))
      {
          /* We're dealing with a Microsoft Basic Data Partition entry. */
-@@ -738,6 +749,23 @@ static void usbHsFsMountParseGuidPartitionTableEntry(UsbHsFsDriveLogicalUnitCont
+@@ -738,6 +749,22 @@ static void usbHsFsMountParseGuidPartitionTableEntry(UsbHsFsDriveLogicalUnitCont
  #ifdef GPL_BUILD
          /* Check if this LBA points to a valid EXT superblock. Register the EXT volume if so. */
          fs_type = usbHsFsMountInspectExtSuperBlock(lun_ctx, block, entry_lba);
@@ -33,11 +33,10 @@
 +    } else
 +    if (memcmp(gpt_entry->type_guid, g_emptyPartitionGuid, sizeof(g_emptyPartitionGuid)))
 +    {
-+        /* Some tools place standard exFAT/FAT/NTFS (or even EXT) volumes behind GPT type
-+         * GUIDs other than the Microsoft Basic Data / Linux Filesystem Data ones handled
-+         * above. For instance, the Windows Recovery Environment partition created by Windows
-+         * Setup uses type GUID DE94BBA4-06D1-4D40-A16A-BFD50179D6AC, yet holds an NTFS volume.
-+         * Probe the VBR (and, on GPL builds, the EXT superblock) before skipping the entry. */
++        /* Some tools place standard exFAT/FAT/NTFS (or even EXT) volumes behind GPT type GUIDs other than the */
++        /* Microsoft Basic Data / Linux Filesystem Data ones handled above. For instance, the Windows Recovery */
++        /* Environment partition created by Windows Setup uses type GUID DE94BBA4-06D1-4D40-A16A-BFD50179D6AC, */
++        /* yet holds an NTFS volume. Probe the VBR (and, on GPL builds, the EXT superblock) before skipping it. */
 +        USBHSFS_LOG_MSG("Found unrecognized GPT partition type at LBA 0x%lX. Probing VBR (interface %d, LUN %u).", entry_lba, lun_ctx->usb_if_id, lun_ctx->lun);
 +        fs_type = usbHsFsMountInspectVolumeBootRecord(lun_ctx, block, entry_lba);
 +#ifdef GPL_BUILD
