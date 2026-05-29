@@ -1,0 +1,33 @@
+--- source/usbhsfs_mount.c
++++ source/usbhsfs_mount.c
+@@ -211,8 +211,9 @@ static u32 *g_devoptabDeviceIds = NULL;
+ static u32 g_devoptabDefaultDeviceId = DEVOPTAB_INVALID_ID;
+ static Mutex g_devoptabDefaultDeviceMutex = 0;
+
+ static const u8 g_microsoftBasicDataPartitionGuid[0x10] = { 0xA2, 0xA0, 0xD0, 0xEB, 0xE5, 0xB9, 0x33, 0x44, 0x87, 0xC0, 0x68, 0xB6, 0xB7, 0x26, 0x99, 0xC7 };   /* EBD0A0A2-B9E5-4433-87C0-68B6B72699C7. */
+ static const u8 g_linuxFilesystemDataGuid[0x10] = { 0xAF, 0x3D, 0xC6, 0x0F, 0x83, 0x84, 0x72, 0x47, 0x8E, 0x79, 0x3D, 0x69, 0xD8, 0x47, 0x7D, 0xE4 };           /* 0FC63DAF-8483-4772-8E79-3D69D8477DE4. */
++static const u8 g_emptyPartitionGuid[0x10] = {0};
+
+ static u32 g_fileSystemMountFlags = UsbHsFsMountFlags_Default;
+
+@@ -740,6 +741,20 @@ static void usbHsFsMountParseGuidPartitionTableEntry(UsbHsFsDriveLogicalUnitCont
+         /* Check if this LBA points to a valid EXT superblock. Register the EXT volume if so. */
+         fs_type = usbHsFsMountInspectExtSuperBlock(lun_ctx, block, entry_lba);
+ #endif
++    } else
++    if (memcmp(gpt_entry->type_guid, g_emptyPartitionGuid, sizeof(g_emptyPartitionGuid)) && \
++        entry_lba && entry_lba < lun_ctx->block_count && \
++        gpt_entry->lba_end >= entry_lba && gpt_entry->lba_end < lun_ctx->block_count)
++    {
++        /* Some formatters put otherwise standard exFAT/FAT/NTFS volumes behind
++         * non-Microsoft GPT type GUIDs. Probe the VBR before skipping them. The
++         * LBA range is bounds-checked first so uninitialized/garbage entries
++         * (e.g. 0xF4-filled, lba_start == 0xF4F4F4F4F4F4F4F4) don't trigger reads
++         * at absurd LBAs, which stall and reset flaky USB drives and knock them
++         * off the bus.
++         */
++        USBHSFS_LOG_MSG("Found unrecognized GPT partition type at LBA 0x%lX. Probing VBR (interface %d, LUN %u).", entry_lba, lun_ctx->usb_if_id, lun_ctx->lun);
++        fs_type = usbHsFsMountInspectVolumeBootRecord(lun_ctx, block, entry_lba);
+     }
+
+     /* Register volume. */

@@ -57,6 +57,7 @@ build*/
 
 misc/*/*
 !misc/*/PKGBUILD
+!misc/*/*.patch
 !misc/crossfile.txt
 
 assets/icon.svg

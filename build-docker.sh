@@ -17,5 +17,5 @@ docker run --rm --name devkitpro-switchwave \
         make build-uam
         make configure-mpv
         make build-mpv
-        make dist -j\$(nproc)
+        make dist -j\$(nproc) LIBUSBHSFS_DEBUG=${LIBUSBHSFS_DEBUG:-0}
     "

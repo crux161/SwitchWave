@@ -26,11 +26,13 @@ ENV DEVKITPRO=/opt/devkitpro
 ENV PORTLIBS_PREFIX=${DEVKITPRO}/portlibs/switch
 
 # Build libusbhsfs (GPL)
+COPY misc/libusbhsfs/relaxed-gpt-vbr-probe.patch /tmp/libusbhsfs-relaxed-gpt-vbr-probe.patch
 RUN git clone --depth 1 https://github.com/DarkMatterCore/libusbhsfs.git /tmp/libusbhsfs \
     && cd /tmp/libusbhsfs \
+    && patch -Np0 -i /tmp/libusbhsfs-relaxed-gpt-vbr-probe.patch \
     && source ${DEVKITPRO}/switchvars.sh \
     && make BUILD_TYPE=gpl install \
-    && rm -rf /tmp/libusbhsfs
+    && rm -rf /tmp/libusbhsfs /tmp/libusbhsfs-relaxed-gpt-vbr-probe.patch
 
 # Build libsmb2
 RUN git clone --depth 1 https://github.com/sahlberg/libsmb2.git /tmp/libsmb2 \

@@ -51,7 +51,12 @@ CFLAGS                  :=  -std=gnu11
 CXXFLAGS                :=  -std=gnu++23
 ASFLAGS                 :=
 LDFLAGS                 :=  -g -Wl,--gc-sections -Wl,-pie -specs=$(DEVKITPRO)/libnx/switch.specs
-LINKS                   :=  -lusbhsfs -lntfs-3g -llwext4 -ldeko3d -lnx
+LIBUSBHSFS_DEBUG        ?=  0
+LIBUSBHSFS_LINK         :=  -lusbhsfs
+ifeq ($(LIBUSBHSFS_DEBUG),1)
+LIBUSBHSFS_LINK         :=  -lusbhsfsd
+endif
+LINKS                   :=  $(LIBUSBHSFS_LINK) -lntfs-3g -llwext4 -ldeko3d -lnx
 PREFIX                  :=  aarch64-none-elf-
 
 # -----------------------------------------------
