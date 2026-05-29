@@ -1154,6 +1154,117 @@ ImWchar const nxFontRanges[] = {
     // clang-format on
 };
 
+/// \brief Apply a Horizon-OS-flavoured ImGui style: clean flat panels, the Switch
+///        home-menu cyan accent (~#00C2C9), and airier spacing. Sizes are authored
+///        at the 720p base and scaled by the caller for docked mode.
+/// \param dark Use the dark ("Basic Black") palette; light ("Basic White") otherwise
+void styleHorizon (bool dark)
+{
+    auto &style = ImGui::GetStyle ();
+
+    // Geometry: flat windows, gently rounded controls, generous spacing.
+    style.WindowRounding          = 0.0f;
+    style.ChildRounding           = 6.0f;
+    style.FrameRounding           = 6.0f;
+    style.PopupRounding           = 6.0f;
+    style.GrabRounding            = 6.0f;
+    style.TabRounding             = 6.0f;
+    style.ScrollbarRounding       = 10.0f;
+
+    style.WindowBorderSize        = 0.0f;
+    style.ChildBorderSize         = 1.0f;
+    style.PopupBorderSize         = 1.0f;
+    style.FrameBorderSize         = 1.0f;
+    style.TabBorderSize           = 0.0f;
+    style.SeparatorTextBorderSize = 2.0f;
+
+    style.WindowPadding           = ImVec2 (24.0f, 20.0f);
+    style.FramePadding            = ImVec2 (16.0f, 10.0f);
+    style.CellPadding             = ImVec2 (10.0f,  8.0f);
+    style.ItemSpacing             = ImVec2 (12.0f, 10.0f);
+    style.ItemInnerSpacing        = ImVec2 ( 8.0f,  6.0f);
+    style.IndentSpacing           = 24.0f;
+    style.ScrollbarSize           = 16.0f;
+    style.GrabMinSize             = 14.0f;
+
+    style.WindowTitleAlign        = ImVec2 (0.0f, 0.5f);
+    style.ButtonTextAlign         = ImVec2 (0.5f, 0.5f);
+    style.SelectableTextAlign     = ImVec2 (0.0f, 0.5f);
+
+    // The Switch home-menu accent is a bright cyan (~#00C2C9).
+    const ImVec4 accent    = ImVec4 (0.00f, 0.76f, 0.79f, 1.00f);
+    const ImVec4 accent_hi = ImVec4 (0.13f, 0.85f, 0.88f, 1.00f);
+    auto a = [] (ImVec4 c, float alpha) { c.w = alpha; return c; };
+
+    // Theme-dependent neutrals.
+    const ImVec4 text      = dark ? ImVec4 (0.93f, 0.93f, 0.93f, 1.00f) : ImVec4 (0.12f, 0.12f, 0.12f, 1.00f);
+    const ImVec4 text_dim  = dark ? ImVec4 (0.55f, 0.55f, 0.55f, 1.00f) : ImVec4 (0.45f, 0.45f, 0.45f, 1.00f);
+    const ImVec4 window_bg = dark ? ImVec4 (0.16f, 0.16f, 0.16f, 1.00f) : ImVec4 (0.92f, 0.92f, 0.92f, 1.00f);
+    const ImVec4 child_bg  = dark ? ImVec4 (0.13f, 0.13f, 0.13f, 1.00f) : ImVec4 (0.97f, 0.97f, 0.97f, 1.00f);
+    const ImVec4 popup_bg  = dark ? ImVec4 (0.11f, 0.11f, 0.11f, 0.98f) : ImVec4 (0.98f, 0.98f, 0.98f, 0.98f);
+    const ImVec4 frame_bg  = dark ? ImVec4 (0.22f, 0.22f, 0.22f, 1.00f) : ImVec4 (1.00f, 1.00f, 1.00f, 1.00f);
+    const ImVec4 button_bg = dark ? ImVec4 (0.24f, 0.24f, 0.24f, 1.00f) : ImVec4 (1.00f, 1.00f, 1.00f, 1.00f);
+    const ImVec4 border    = dark ? ImVec4 (0.30f, 0.30f, 0.30f, 1.00f) : ImVec4 (0.78f, 0.78f, 0.78f, 1.00f);
+    const ImVec4 border_lt = dark ? ImVec4 (0.24f, 0.24f, 0.24f, 1.00f) : ImVec4 (0.86f, 0.86f, 0.86f, 1.00f);
+    const ImVec4 header_bg = dark ? ImVec4 (0.20f, 0.20f, 0.20f, 1.00f) : ImVec4 (0.86f, 0.86f, 0.86f, 1.00f);
+    const ImVec4 row_alt   = dark ? ImVec4 (1.00f, 1.00f, 1.00f, 0.03f) : ImVec4 (0.00f, 0.00f, 0.00f, 0.03f);
+    const ImVec4 clear     = ImVec4 (0.00f, 0.00f, 0.00f, 0.00f);
+
+    ImVec4 *c = style.Colors;
+    c[ImGuiCol_Text]                     = text;
+    c[ImGuiCol_TextDisabled]             = text_dim;
+    c[ImGuiCol_WindowBg]                 = window_bg;
+    c[ImGuiCol_ChildBg]                  = child_bg;
+    c[ImGuiCol_PopupBg]                  = popup_bg;
+    c[ImGuiCol_Border]                   = border;
+    c[ImGuiCol_BorderShadow]             = clear;
+    c[ImGuiCol_FrameBg]                  = frame_bg;
+    c[ImGuiCol_FrameBgHovered]           = a (accent, 0.20f);
+    c[ImGuiCol_FrameBgActive]            = a (accent, 0.38f);
+    c[ImGuiCol_TitleBg]                  = popup_bg;
+    c[ImGuiCol_TitleBgActive]            = popup_bg;
+    c[ImGuiCol_TitleBgCollapsed]         = popup_bg;
+    c[ImGuiCol_MenuBarBg]                = child_bg;
+    c[ImGuiCol_ScrollbarBg]              = clear;
+    c[ImGuiCol_ScrollbarGrab]            = border;
+    c[ImGuiCol_ScrollbarGrabHovered]     = a (accent, 0.60f);
+    c[ImGuiCol_ScrollbarGrabActive]      = accent;
+    c[ImGuiCol_CheckMark]                = accent;
+    c[ImGuiCol_SliderGrab]               = accent;
+    c[ImGuiCol_SliderGrabActive]         = accent_hi;
+    c[ImGuiCol_Button]                   = button_bg;
+    c[ImGuiCol_ButtonHovered]            = a (accent, 0.22f);
+    c[ImGuiCol_ButtonActive]             = a (accent, 0.45f);
+    c[ImGuiCol_Header]                   = a (accent, 0.25f);
+    c[ImGuiCol_HeaderHovered]            = a (accent, 0.38f);
+    c[ImGuiCol_HeaderActive]             = a (accent, 0.55f);
+    c[ImGuiCol_Separator]                = border;
+    c[ImGuiCol_SeparatorHovered]         = a (accent, 0.60f);
+    c[ImGuiCol_SeparatorActive]          = accent;
+    c[ImGuiCol_ResizeGrip]               = clear;
+    c[ImGuiCol_ResizeGripHovered]        = a (accent, 0.40f);
+    c[ImGuiCol_ResizeGripActive]         = accent;
+    c[ImGuiCol_Tab]                      = clear;
+    c[ImGuiCol_TabHovered]               = a (accent, 0.30f);
+    c[ImGuiCol_TabSelected]              = a (accent, 0.18f);
+    c[ImGuiCol_TabSelectedOverline]      = accent;
+    c[ImGuiCol_TabDimmed]                = clear;
+    c[ImGuiCol_TabDimmedSelected]        = a (accent, 0.12f);
+    c[ImGuiCol_TabDimmedSelectedOverline]= a (accent, 0.40f);
+    c[ImGuiCol_TableHeaderBg]            = header_bg;
+    c[ImGuiCol_TableBorderStrong]        = border;
+    c[ImGuiCol_TableBorderLight]         = border_lt;
+    c[ImGuiCol_TableRowBg]               = clear;
+    c[ImGuiCol_TableRowBgAlt]            = row_alt;
+    c[ImGuiCol_TextSelectedBg]           = a (accent, 0.35f);
+    c[ImGuiCol_NavHighlight]             = accent;
+    c[ImGuiCol_DragDropTarget]           = accent;
+    c[ImGuiCol_PlotLines]                = accent;
+    c[ImGuiCol_PlotLinesHovered]         = accent_hi;
+    c[ImGuiCol_PlotHistogram]            = accent;
+    c[ImGuiCol_PlotHistogramHovered]     = accent_hi;
+}
+
 /// \brief Handle applet hook
 /// \param hook_ Callback reason
 /// \param param_ User param
@@ -1176,13 +1287,10 @@ void handleAppletHook (AppletHookType const hook_, void *const param_)
                 s_width  = 1280.0f;
                 s_height = 720.0f;
 
-                // Reset style (better than trying to scale back)
+                // Rebuild the style from scratch (better than trying to scale back)
                 auto &style = ImGui::GetStyle();
                 style = ImGuiStyle();
-                style.ScrollbarSize = 20.0f;
-
-                if (s_theme == ColorSetId_Light)
-                    ImGui::StyleColorsLight();
+                styleHorizon(s_theme != ColorSetId_Light);
             }
             break;
 
@@ -1191,8 +1299,11 @@ void handleAppletHook (AppletHookType const hook_, void *const param_)
                 s_width  = 1920.0f;
                 s_height = 1080.0f;
 
-                // Scale style
-                ImGui::GetStyle().ScaleAllSizes(1920.0f / 1280.0f);
+                // Rebuild the style and scale it for 1080p
+                auto &style = ImGui::GetStyle();
+                style = ImGuiStyle();
+                styleHorizon(s_theme != ColorSetId_Light);
+                style.ScaleAllSizes(1920.0f / 1280.0f);
             }
             break;
         }
