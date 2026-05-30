@@ -1,4 +1,5 @@
 #include <dirent.h>
+#include <cmath>
 
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include <imgui.h>
@@ -188,12 +189,31 @@ void Explorer::render() {
         ImVec4 tint_col = (ImGui::nx::getCurrentTheme() == ColorSetId_Dark) ?
             ImVec4(1, 1, 1, 1) : ImVec4(0, 0, 0, 1);
 
+        // The animated cyan highlight is our selection indicator; suppress ImGui's instant nav box.
+        ImGui::PushStyleColor(ImGuiCol_NavHighlight, 0);
+        SW_SCOPEGUARD([] { ImGui::PopStyleColor(); });
+
+        // Draw the highlight (last frame's interpolated rect) under the rows about to be rendered.
+        if (this->sel_valid) {
+            auto *draw     = ImGui::GetWindowDrawList();
+            ImVec4 acc     = ImGui::GetStyle().Colors[ImGuiCol_SliderGrab];
+            float  pad     = this->screen_rel_height(0.004);
+            float  rounding = this->screen_rel_height(0.006);
+            ImVec2 r_min(this->sel_x0, this->sel_y0 - pad), r_max(this->sel_x1, this->sel_y1 + pad);
+            draw->AddRectFilled(r_min, r_max, ImGui::GetColorU32(ImVec4(acc.x, acc.y, acc.z, 0.18f)), rounding);
+            draw->AddRect(r_min, r_max, ImGui::GetColorU32(acc), rounding, 0, 2.0f * this->scale_factor());
+        }
+
+        float tx0 = 0, ty0 = 0, tx1 = 0, ty1 = 0;
+        bool  target_valid = false;
+
         ImGuiListClipper clipper;
         clipper.Begin(this->entries.size());
 
         while (clipper.Step()) {
             for (auto i = clipper.DisplayStart; i < clipper.DisplayEnd; ++i) {
                 auto &entry = this->entries[i];
+                auto row_min = ImGui::GetCursorScreenPos();
                 ImGui::Image(ImGui::deko3d::makeTextureID((entry.type == fs::Node::Type::File) ?
                         this->file_texture.handle : this->folder_texture.handle, true),
                     ImVec2(ImGui::GetFontSize(), ImGui::GetFontSize()), ImVec2(0, 0), ImVec2(1, 1), tint_col);
@@ -202,9 +222,26 @@ void Explorer::render() {
                 want_explore_forward |= ImGui::Selectable(entry.name.c_str());
                 auto is_item_focused = ImGui::IsItemFocused();
 
-                if (is_item_focused)
+                if (is_item_focused) {
                     this->cur_focused_entry = i;
+                    auto item_max = ImGui::GetItemRectMax();
+                    tx0 = row_min.x, ty0 = row_min.y, tx1 = item_max.x, ty1 = item_max.y;
+                    target_valid = true;
+                }
             }
+        }
+
+        // Advance the highlight toward the focused row (frame-rate independent smoothing).
+        if (target_valid) {
+            if (!this->sel_valid) {
+                this->sel_x0 = tx0, this->sel_y0 = ty0, this->sel_x1 = tx1, this->sel_y1 = ty1;
+                this->sel_valid = true;
+            }
+            float t = 1.0f - std::exp(-24.0f * ImGui::GetIO().DeltaTime);
+            this->sel_x0 += (tx0 - this->sel_x0) * t;
+            this->sel_y0 += (ty0 - this->sel_y0) * t;
+            this->sel_x1 += (tx1 - this->sel_x1) * t;
+            this->sel_y1 += (ty1 - this->sel_y1) * t;
         }
 
         if (want_explore_backward) {
@@ -231,6 +268,7 @@ void Explorer::render() {
             ImGui::SetNavWindow(ImGui::GetCurrentWindow());
             ImGui::SetNavID(ImGui::GetID(entry.name.c_str()), ImGuiNavLayer_Main, 0, ImRect());
             this->want_focus_reset = false;
+            this->sel_valid        = false;  // snap the highlight to the new list instead of sliding across it
         }
     }
 

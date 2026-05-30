@@ -41,6 +41,10 @@ class Explorer: public Widget {
         bool is_initial_scan     = true;
         bool need_directory_scan = true;
         bool want_focus_reset    = false;
+
+        // Animated selection highlight (Tier 3): smoothly slides toward the focused row.
+        float sel_x0 = 0.0f, sel_y0 = 0.0f, sel_x1 = 0.0f, sel_y1 = 0.0f;
+        bool  sel_valid = false;
 };
 
 } // namespace sw::ui
