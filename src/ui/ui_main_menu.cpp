@@ -160,24 +160,56 @@ void MainMenuGui::render() {
         this->explorer.is_displayed = this->editor.is_displayed =
             this->settings.is_displayed = this->infohelp.is_displayed = false;
 
+        Widget *active = nullptr;
         switch (this->cur_tab) {
             default:
             case Tab::Explorer:
                 this->explorer.is_displayed = true;
                 this->explorer.render();
+                active = &this->explorer;
                 break;
             case Tab::ConfigEdit:
                 this->editor.is_displayed   = true;
                 this->editor.render();
+                active = &this->editor;
                 break;
             case Tab::Settings:
                 this->settings.is_displayed = true;
                 this->settings.render();
+                active = &this->settings;
                 break;
             case Tab::InfoHelp:
                 this->infohelp.is_displayed = true;
                 this->infohelp.render();
+                active = &this->infohelp;
                 break;
+        }
+
+        // Latitude footer: a rule and right-aligned button hints (AppletFrame style).
+        if (active) {
+            auto *draw    = ImGui::GetWindowDrawList();
+            auto  win_pos = ImGui::GetWindowPos();
+            auto  win_sz  = ImGui::GetWindowSize();
+
+            float margin  = this->screen_rel_width(0.025);
+            float foot_h  = imctx.FontSize + this->screen_rel_height(0.024);
+            float rule_y  = win_pos.y + win_sz.y - foot_h;
+            float text_y  = rule_y + this->screen_rel_height(0.006);
+
+            draw->AddLine(ImVec2(win_pos.x + margin, rule_y), ImVec2(win_pos.x + win_sz.x - margin, rule_y),
+                          ImGui::GetColorU32(ImGuiCol_Border), std::max(1.0f, this->scale_factor()));
+
+            float x       = win_pos.x + win_sz.x - margin;
+            float gap     = this->screen_rel_width(0.02);
+            auto  txt_col = ImGui::GetColorU32(ImGuiCol_Text);
+            auto  hints   = active->button_hints();
+            for (auto it = hints.rbegin(); it != hints.rend(); ++it) {
+                char buf[64];
+                std::snprintf(buf, sizeof(buf), "%s %s", it->glyph, it->label);
+                x -= ImGui::CalcTextSize(buf).x;
+                draw->AddText(ImVec2(x, text_y), txt_col, buf);
+                x -= gap;
+            }
         }
     }
 

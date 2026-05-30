@@ -19,6 +19,7 @@
 
 #include <cmath>
 #include <concepts>
+#include <span>
 #include <switch.h>
 
 #include "render.hpp"
@@ -33,6 +34,21 @@ class Widget {
         virtual bool update_state(PadState &pad, HidTouchScreenState &touch) = 0;
 
         virtual void render() = 0;
+
+        // A button glyph (from the Nintendo extended font) paired with its action label,
+        // shown in the main-menu footer hint bar. Screens override to add their own hints.
+        struct ButtonHint {
+            const char *glyph;
+            const char *label;
+        };
+
+        virtual std::span<const ButtonHint> button_hints() const {
+            static constexpr ButtonHint hints[] = {
+                { "", "OK"   },
+                { "", "Exit" },
+            };
+            return hints;
+        }
 
         constexpr float scale_factor() const {
             return static_cast<float>(this->renderer.image_width) / 1280.0f;
