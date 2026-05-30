@@ -1199,10 +1199,10 @@ void styleHorizon (bool dark)
     // Theme-dependent neutrals.
     const ImVec4 text      = dark ? ImVec4 (0.93f, 0.93f, 0.93f, 1.00f) : ImVec4 (0.12f, 0.12f, 0.12f, 1.00f);
     const ImVec4 text_dim  = dark ? ImVec4 (0.55f, 0.55f, 0.55f, 1.00f) : ImVec4 (0.45f, 0.45f, 0.45f, 1.00f);
-    const ImVec4 window_bg = dark ? ImVec4 (0.16f, 0.16f, 0.16f, 1.00f) : ImVec4 (0.92f, 0.92f, 0.92f, 1.00f);
-    const ImVec4 child_bg  = dark ? ImVec4 (0.13f, 0.13f, 0.13f, 1.00f) : ImVec4 (0.97f, 0.97f, 0.97f, 1.00f);
-    const ImVec4 popup_bg  = dark ? ImVec4 (0.11f, 0.11f, 0.11f, 0.98f) : ImVec4 (0.98f, 0.98f, 0.98f, 0.98f);
-    const ImVec4 frame_bg  = dark ? ImVec4 (0.22f, 0.22f, 0.22f, 1.00f) : ImVec4 (1.00f, 1.00f, 1.00f, 1.00f);
+    const ImVec4 window_bg = dark ? ImVec4 (0.14f, 0.14f, 0.15f, 1.00f) : ImVec4 (0.92f, 0.92f, 0.92f, 1.00f);
+    const ImVec4 child_bg  = dark ? ImVec4 (0.17f, 0.17f, 0.18f, 1.00f) : ImVec4 (0.97f, 0.97f, 0.97f, 1.00f);
+    const ImVec4 popup_bg  = dark ? ImVec4 (0.12f, 0.12f, 0.13f, 0.98f) : ImVec4 (0.98f, 0.98f, 0.98f, 0.98f);
+    const ImVec4 frame_bg  = dark ? ImVec4 (0.21f, 0.21f, 0.22f, 1.00f) : ImVec4 (1.00f, 1.00f, 1.00f, 1.00f);
     const ImVec4 button_bg = dark ? ImVec4 (0.24f, 0.24f, 0.24f, 1.00f) : ImVec4 (1.00f, 1.00f, 1.00f, 1.00f);
     const ImVec4 border    = dark ? ImVec4 (0.30f, 0.30f, 0.30f, 1.00f) : ImVec4 (0.78f, 0.78f, 0.78f, 1.00f);
     const ImVec4 border_lt = dark ? ImVec4 (0.24f, 0.24f, 0.24f, 1.00f) : ImVec4 (0.86f, 0.86f, 0.86f, 1.00f);
@@ -1235,9 +1235,9 @@ void styleHorizon (bool dark)
     c[ImGuiCol_Button]                   = button_bg;
     c[ImGuiCol_ButtonHovered]            = a (accent, 0.22f);
     c[ImGuiCol_ButtonActive]             = a (accent, 0.45f);
-    c[ImGuiCol_Header]                   = a (accent, 0.25f);
-    c[ImGuiCol_HeaderHovered]            = a (accent, 0.38f);
-    c[ImGuiCol_HeaderActive]             = a (accent, 0.55f);
+    c[ImGuiCol_Header]                   = a (accent, 0.32f);
+    c[ImGuiCol_HeaderHovered]            = a (accent, 0.48f);
+    c[ImGuiCol_HeaderActive]             = a (accent, 0.68f);
     c[ImGuiCol_Separator]                = border;
     c[ImGuiCol_SeparatorHovered]         = a (accent, 0.60f);
     c[ImGuiCol_SeparatorActive]          = accent;
