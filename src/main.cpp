@@ -32,9 +32,8 @@
 
 #include "libmpv.hpp"
 #include "render.hpp"
-#include "waves.hpp"
 #include "context.hpp"
-#include "ui/ui_main_menu.hpp"
+#include "ui/ui_borealis.hpp"
 #include "ui/ui_player.hpp"
 #include "fs/fs_common.hpp"
 #include "fs/fs_ums.hpp"
@@ -194,41 +193,12 @@ void apply_pending_ums_changes(sw::Context &context) {
     }
 }
 
-int menu_loop(sw::Renderer &renderer, sw::Context &context) {
-    renderer.switch_presentation_mode(false);
-
+int menu_loop(sw::Context &context) {
     context.cur_file.clear();
 
-    auto waves = std::make_unique<sw::ui::Waves>      (renderer);
-    auto menu  = std::make_unique<sw::ui::MainMenuGui>(renderer, context);
-
-    while (!context.want_quit) {
-        if (!appletMainLoop()) {
-            context.want_quit = true;
-            break;
-        }
-
+    return sw::ui::run_borealis_menu(context, [&context] {
         apply_pending_ums_changes(context);
-
-        padUpdate(&g_pad);
-        auto has_touches = hidGetTouchScreenStates(&g_touch_state, 1);
-        ImGui::nx::newFrame(&g_pad, has_touches ? &g_touch_state : nullptr);
-        ImGui::NewFrame();
-
-        if (!menu->update_state(g_pad, g_touch_state)) {
-            ImGui::EndFrame();
-            break;
-        }
-
-        renderer.begin_frame();
-        waves->render();
-        menu ->render();
-        renderer.end_frame();
-    }
-
-    renderer.wait_idle();
-
-    return 0;
+    });
 }
 
 int video_loop(sw::Renderer &renderer, sw::Context &context) {
@@ -358,16 +328,8 @@ int video_loop(sw::Renderer &renderer, sw::Context &context) {
     return context.last_error;
 }
 
-} // namespace
-
-int main(int argc, const char **argv) {
-    std::printf("Starting " APP_TITLE ", v" APP_VERSION ", built: " __DATE__ " " __TIME__ "\n");
-
-    auto setup_thread = std::jthread(&mpv_presetup);
-
-    hidSetNpadHandheldActivationMode(HidNpadHandheldActivationMode_Single);
+int run_video_loop(sw::Context &context) {
     padConfigureInput(8, HidNpadStyleSet_NpadStandard);
-    padInitializeAny(&g_pad);
 
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -380,11 +342,25 @@ int main(int argc, const char **argv) {
         ImGui::DestroyContext();
     });
 
-    static sw::Renderer renderer;
+    sw::Renderer renderer;
     if (renderer.initialize()) {
         std::printf("Failed to initialize renderer\n");
-        return 1;
+        return -1;
     }
+
+    return video_loop(renderer, context);
+}
+
+} // namespace
+
+int main(int argc, const char **argv) {
+    std::printf("Starting " APP_TITLE ", v" APP_VERSION ", built: " __DATE__ " " __TIME__ "\n");
+
+    auto setup_thread = std::jthread(&mpv_presetup);
+
+    hidSetNpadHandheldActivationMode(HidNpadHandheldActivationMode_Single);
+    padConfigureInput(8, HidNpadStyleSet_NpadStandard);
+    padInitializeAny(&g_pad);
 
     static sw::Context context;
     if (context.read_from_file())
@@ -427,7 +403,7 @@ int main(int argc, const char **argv) {
 
     while (!context.want_quit) {
         if (!context.cur_file.empty()) {
-            if (auto rc = video_loop(renderer, context)) {
+            if (auto rc = run_video_loop(context)) {
                 std::printf("Failed to run player: %d (%s)\n", rc, mpv_error_string(rc));
                 context.set_error(rc, sw::Context::ErrorType::Mpv);
             } else {
@@ -438,14 +414,9 @@ int main(int argc, const char **argv) {
         if (context.cli_mode)
             break;
 
-        if (auto rc = menu_loop(renderer, context))
+        if (auto rc = menu_loop(context))
             std::printf("Failed to run menu: %d\n", rc);
     }
-
-    // Clear the screen before quitting
-    ImGui::NewFrame();
-    renderer.begin_frame();
-    renderer.end_frame();
 
     if (recent->write_to_file())
         std::printf("Failed to write history to file\n");

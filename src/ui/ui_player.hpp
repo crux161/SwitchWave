@@ -29,6 +29,7 @@
 #include "context.hpp"
 #include "utils.hpp"
 #include "ui/ui_common.hpp"
+#include "ui/ui_explorer.hpp"
 
 namespace sw::ui {
 

@@ -17,3 +17,6 @@
 [submodule "src/inih"]
 	path = src/inih
 	url = https://github.com/benhoyt/inih.git
+[submodule "external/borealis"]
+	path = external/borealis
+	url = https://github.com/natinusala/borealis.git

@@ -34,6 +34,9 @@ INCLUDES                :=  include src src/imgui src/imgui_impl_hos src/implot 
 SOURCES                 :=  src src/fs src/ui src/imgui src/imgui/misc/freetype src/imgui_impl_hos src/implot src/inih
 SHADERS                 :=  src/shaders
 TEXTURES                :=  assets/textures
+BOREALIS_PATH           :=  external/borealis
+BOREALIS_RESOURCES      :=  $(BOREALIS_PATH)/resources
+BOREALIS_SHADERS        :=  $(BOREALIS_PATH)/library/lib/extern/nanovg-deko3d/shaders
 BUILD                   :=  build
 ROMFS                   :=  $(BUILD)/romfs
 INSTALL                 :=  $(TOPDIR)/$(BUILD)/install
@@ -59,6 +62,10 @@ PORTLIBS                :=  $(DEVKITPRO)/portlibs/switch
 LIBNX                   :=  $(DEVKITPRO)/libnx
 LIBDIRS                 +=  $(PORTLIBS) $(LIBNX)
 
+LIBS                    :=
+include $(TOPDIR)/$(BOREALIS_PATH)/library/borealis.mk
+LINKS                   :=  $(LIBS) $(LINKS)
+
 export PATH             :=  $(DEVKITPRO)/tools/bin:$(DEVKITPRO)/devkitA64/bin:$(PORTLIBS)/bin:$(PATH)
 export PKG_CONFIG_PATH  :=  $(INSTALL)/lib/pkgconfig:$(PORTLIBS)/lib/pkgconfig
 export PKG_CONFIG_LIBDIR =
@@ -82,8 +89,10 @@ DIST_TARGET             :=  $(BUILD)/$(APP_TITLE)-$(APP_VERSION)-$(APP_COMMIT).z
 CFILES                  :=  $(shell find $(SOURCES) -maxdepth 1 -name '*.c')
 CPPFILES                :=  $(shell find $(SOURCES) -maxdepth 1 -name '*.cpp')
 SFILES                  :=  $(shell find $(SOURCES) -maxdepth 1 -name '*.s' -or -name '*.S')
-GLSLFILES               :=  $(notdir $(shell find $(SHADERS) -maxdepth 1 -name '*.glsl'))
+GLSLFILES               :=  $(notdir $(shell find $(SHADERS) $(BOREALIS_SHADERS) -maxdepth 1 -name '*.glsl'))
 SVGFILES                :=  $(notdir $(shell find $(TEXTURES) -maxdepth 1 -name '*.svg'))
+BOREALIS_ROMFS_FILES    :=  $(shell find $(BOREALIS_RESOURCES) -type f ! -name '.gitignore')
+BOREALIS_ROMFS_TARGETS  :=  $(patsubst $(BOREALIS_RESOURCES)/%,$(ROMFS)/%,$(BOREALIS_ROMFS_FILES))
 
 OFILES                  :=  $(CFILES:%=$(BUILD)/%.o) $(CPPFILES:%=$(BUILD)/%.o) $(SFILES:%=$(BUILD)/%.o)
 DFILES                  :=  $(OFILES:.o=.d)
@@ -132,7 +141,7 @@ NROFLAGS                :=  --icon=$(strip $(APP_ICON)) --nacp=$(strip $(NACP_TA
 
 ifneq ($(ROMFS),)
     NROFLAGS            +=  --romfsdir=$(strip $(ROMFS))
-    ROMFS_TARGET        :=  $(shell find $(ROMFS) -type 'f') $(DKSHFILES) $(BCFILES)
+    ROMFS_TARGET        :=  $(shell find $(ROMFS) -type 'f' 2>/dev/null) $(DKSHFILES) $(BCFILES) $(BOREALIS_ROMFS_TARGETS)
 endif
 
 # -----------------------------------------------
@@ -213,12 +222,14 @@ $(BUILD)/%.s.o: %.s %.S
 	@mkdir -p $(dir $@)
 	@$(AS) -MMD -MP -x assembler-with-cpp $(ARCH) $(RELEASE_FLAGS) $(RELEASE_ASFLAGS) $(INCLUDE_FLAGS) -c $(CURDIR)/$< -o $@
 
-$(ROMFS)/shaders/%_vsh.dksh: $(SHADERS)/%_vsh.glsl
+vpath %.glsl $(SHADERS) $(BOREALIS_SHADERS)
+
+$(ROMFS)/shaders/%_vsh.dksh: %_vsh.glsl
 	@echo "VERT    " $@
 	@mkdir -p $(dir $@)
 	@uam -s vert -o $@ $<
 
-$(ROMFS)/shaders/%_fsh.dksh: $(SHADERS)/%_fsh.glsl
+$(ROMFS)/shaders/%_fsh.dksh: %_fsh.glsl
 	@echo "FRAG    " $@
 	@mkdir -p $(dir $@)
 	@uam -s frag -o $@ $<
@@ -227,6 +238,11 @@ $(ROMFS)/textures/%.bc: $(TEXTURES)/%.svg
 	@echo "BCn     " $@
 	@mkdir -p $(dir $@)
 	@misc/gimp-bcn-convert.sh $< $@
+
+$(ROMFS)/%: $(BOREALIS_RESOURCES)/%
+	@echo "ROMFS   " $@
+	@mkdir -p $(dir $@)
+	@cp $< $@
 
 run: $(OUTPUT)
 	@nxlink -r 100 -s $(OUTPUT) -p SwitchWave/SwitchWave.nro
@@ -242,7 +258,7 @@ $(DIST_TARGET): $(OUTPUT)
 
 clean:
 	@echo Cleaning...
-	@rm -rf $(OUTPUT) $(DIST_TARGET) $(ELF_TARGET) $(NACP_TARGET) $(addprefix $(BUILD)/,$(SOURCES)) $(DKSHFILES) $(BCFILES)
+	@rm -rf $(OUTPUT) $(DIST_TARGET) $(ELF_TARGET) $(NACP_TARGET) $(addprefix $(BUILD)/,$(SOURCES)) $(DKSHFILES) $(BCFILES) $(BOREALIS_ROMFS_TARGETS)
 
 mrproper: clean clean-ffmpeg clean-mpv clean-uam
 	@rm -rf $(INSTALL)
